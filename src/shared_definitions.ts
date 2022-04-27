@@ -1,3 +1,4 @@
+import { isPromise } from "util/types";
 import {
 	DiscoverMessage,
 	EventMessage,
@@ -14,19 +15,32 @@ export type minutes = number;
 
 export type frames = number;
 export type IP = string;
-export type IID = string;
+export type uuid = string;
 export type CallbackCollection = Record<string, (...args: string[]) => void>;
+export type NodeCollection = Record<uuid, Node>;
+
 type DiscoverEvent = | "promotion" | "demotion" | "added" | "removed" | "master" | "helloReceived" | "helloEmitted";
-export type NodeCollection = Record<IID, Node>;
 
 export interface Node {
 	isMaster: boolean;
 	isMasterEligible: boolean;
+	weight: number,
 	address: IP;
-	lastSeen: Timestamp;
-	hostName: string;
+	iid: uuid;
+}
+interface objSend {
+	event : string;
+	pid : uuid;
+	iid : uuid;
+	hostName : string;
+	data: any;
+}
+interface rinfo {	
+	address: IP;
+	family: string;
 	port: number;
-	id: IID;
+	size: number;
+	  
 }
 
 export interface IDiscover {

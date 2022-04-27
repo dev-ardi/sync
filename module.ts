@@ -1,2 +1,3 @@
-import { RemoteProvider } from "./src/client/RemoteProvider";
-export const SyncObject = RemoteProvider
+import { SyncObject } from "./src/client/SyncObject";
+
+export {SyncObject}

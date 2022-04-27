@@ -2,7 +2,7 @@ import { ISync } from "../server_definitions";
 import { SEND_FREQUENCY, TODO } from "../shared_consts";
 import {
 	Node,
-	IID,
+	uuid,
 	milliseconds,
 	Signal,
 	Timestamp,
@@ -10,12 +10,12 @@ import {
 import { Client } from "./client";
 import { performance } from "perf_hooks";
 import { PongResponse, PingMessage } from "../packet_definitions";
-import { RemoteProvider } from "../client/RemoteProvider";
+import { SyncObject } from "../client/SyncObject";
 
 export class Sync implements ISync {
-	private _provider: RemoteProvider;
+	private _provider: SyncObject;
 	clients: Client[] = [];
-	constructor(provider: RemoteProvider) {
+	constructor(provider: SyncObject) {
 		for (const node in provider.discover.nodes) {
 			const element: Node = provider.discover.nodes[node];
 			this.clients.push(new Client(element, provider));
@@ -45,7 +45,9 @@ export class Sync implements ISync {
 		}, SEND_FREQUENCY / highestSkew);
 	}
 	private onPong(pong: PongResponse) {
-		const client = this._getClientFromIID(pong.target!);
+		//@ts-ignore
+		const client = this.sync._getClientFromIID(pong.target!);
+		
 		client.pong(pong.serverTime, pong.clientTime);
 	}
 	private onDiscovery(element: Node): void {}
@@ -59,9 +61,9 @@ export class Sync implements ISync {
 		this._provider.discover.send("ping", message);
 		// TODO Grupo de sync
 	}
-	private _getClientFromIID(id: IID): Client {
+	public _getClientFromIID(id: uuid): Client {
 		let client = this.clients.find((client) => {
-			client.element.id === id;
+			client.element.iid === id;
 		}) 
 		if (!client) throw new Error();
 		return client

@@ -9,7 +9,7 @@ import {
 	Timestamp,
 } from "../shared_definitions";
 import { Sync } from "../server/Sync";
-import { Node, IID } from "../shared_definitions";
+import { Node, uuid } from "../shared_definitions";
 import {
 	DiscoverMessage,
 	EventMessage,
@@ -25,16 +25,16 @@ import {
 	SYNC_ON_PING_THRESHOLD,
 } from "../shared_consts";
 
-export class RemoteProvider implements IRemoteProvider {
+export class SyncObject implements IRemoteProvider {
 	public discover: IDiscover;
 	public sync: Sync | null = null;
 	public addEventIn(event: string, timeout: milliseconds, ...args: string[]) {
 		if (!this.discover.me.isMaster) {
 			throw new Error("ERROR: El cliente no es maestro");
 		}
-		if (args.length != this._eventList[event].arguments.lenght) {
-			throw new Error("ERROR: Número incorrecto de argumentos");
-		}
+		//if (args.length != this._eventList[event].arguments.lenght) {
+		//	throw new Error("ERROR: Número incorrecto de argumentos");
+		//}
 		const message: EventMessage = {
 			event: event,
 			timeout: timeout,
@@ -72,8 +72,9 @@ export class RemoteProvider implements IRemoteProvider {
 		// discover.send wrapper
 		this.discover.send(channel, message);
 	}
-	private _isMessageForMe(id?: IID): boolean {
-		return id === this.discover.me.id;
+
+	private _isMessageForMe(id?: uuid): boolean {
+		return id === this.discover.me.iid;
 	}
 
 	private _forceUpdates(): void {
@@ -109,6 +110,8 @@ export class RemoteProvider implements IRemoteProvider {
 
 			this.discover.on("promotion", () => {
 				this.sync = new Sync(this);
+				//@ts-ignore
+				this.discover.sync = this.sync;
 			});
 			this.discover.on("demotion", () => {
 				this.sync = null;
@@ -123,7 +126,7 @@ export class RemoteProvider implements IRemoteProvider {
 				const msg: PongResponse = {
 					serverTime: message.serverTime,
 					clientTime: performance.now(),
-					target: this.discover.me.id,
+					target: this.discover.me.iid,
 				};
 				this.send("pong", msg);
 			});
@@ -135,7 +138,6 @@ export class RemoteProvider implements IRemoteProvider {
 				if (this._offsetDelta > SYNC_ON_PING_THRESHOLD)
 					this._forceUpdates();
 			});
-
 
 
 			this._eventList.Schedule_media = (src, seek) => {

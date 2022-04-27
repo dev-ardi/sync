@@ -1,7 +1,7 @@
-import { IID, milliseconds, Timestamp } from "./shared_definitions";
+import { uuid, milliseconds, Timestamp } from "./shared_definitions";
 
 export interface DiscoverMessage {
-	target?: IID;
+	target?: uuid;
 }
 export interface PongResponse extends DiscoverMessage {
 	clientTime: Timestamp;

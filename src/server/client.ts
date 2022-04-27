@@ -1,11 +1,11 @@
-import { RemoteProvider } from "../client/RemoteProvider";
+import { SyncObject } from "../client/SyncObject";
 import { OffsetMessage } from "../packet_definitions";
 import { IClient } from "../server_definitions";
 import { MAX_OFFSET_ARRAY_LENGHT } from "../shared_consts";
 import { milliseconds, Timestamp, Node } from "../shared_definitions";
 
 export class Client implements IClient {
-	constructor(element: Node, provider: RemoteProvider) {
+	constructor(element: Node, provider: SyncObject) {
 		this.element = element;
         this._provider = provider;
 	}
@@ -15,7 +15,7 @@ export class Client implements IClient {
 	offset: number = 0;
 	_skewConfidence: milliseconds = 0;
 
-    _provider: RemoteProvider
+    _provider: SyncObject
 	_offsets: number[] = [];
 	
 	pong(t0: Timestamp, t1: Timestamp): void {
