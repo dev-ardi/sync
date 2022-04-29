@@ -14,8 +14,12 @@ import { SyncObject } from "../client/SyncObject";
 
 export class Sync implements ISync {
 	private _provider: SyncObject;
+
+	private sync = this;
 	clients: Client[] = [];
+
 	constructor(provider: SyncObject) {
+		this.clients.push(new Client(provider.discover.me, provider));
 		for (const node in provider.discover.nodes) {
 			const element: Node = provider.discover.nodes[node];
 			this.clients.push(new Client(element, provider));
@@ -42,15 +46,15 @@ export class Sync implements ISync {
 		);
 		setTimeout(() => {
 			this._loop();
-		}, SEND_FREQUENCY / highestSkew);
+		}, 15);
 	}
 	private onPong(pong: PongResponse) {
-		//@ts-ignore
 		const client = this.sync._getClientFromIID(pong.target!);
-		
 		client.pong(pong.serverTime, pong.clientTime);
 	}
-	private onDiscovery(element: Node): void {}
+	private onDiscovery(element: Node): void {
+		this.sync.clients.push(new Client(element, this._provider))
+	}
 	private onDrop(Client: any): void {}
 	private onSignal(signal: Signal): void {} //TODO implement
 
@@ -61,10 +65,8 @@ export class Sync implements ISync {
 		this._provider.discover.send("ping", message);
 		// TODO Grupo de sync
 	}
-	public _getClientFromIID(id: uuid): Client {
-		let client = this.clients.find((client) => {
-			client.element.iid === id;
-		}) 
+	private _getClientFromIID(id: uuid): Client {
+		let client = this.clients.find(client => client.element.iid === id) 
 		if (!client) throw new Error();
 		return client
 

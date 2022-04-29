@@ -11,12 +11,12 @@ export class Client implements IClient {
 	}
 	element: Node;
 
-	skew: milliseconds = 0;
-	offset: number = 0;
-	_skewConfidence: milliseconds = 0;
+	skew: milliseconds = 10;
+	offset: number = 10;
+	_skewConfidence: milliseconds;
 
     _provider: SyncObject
-	_offsets: number[] = [];
+	_offsets: number[] = [this.offset];
 	
 	pong(t0: Timestamp, t1: Timestamp): void {
 		const roundtrip = performance.now() - t0;
@@ -39,7 +39,7 @@ export class Client implements IClient {
 	private _sendOffset(): void {
 		const message: OffsetMessage = {
 			offset: this.offset,
-			target: this.element.id,
+			target: this.element.iid,
 		};
 		this._provider.discover.send("offset", message);
 	}

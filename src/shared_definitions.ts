@@ -6,6 +6,7 @@ import {
 	PingMessage,
 	PongResponse,
 } from "./packet_definitions";
+import { Sync } from "./server/Sync";
 
 export type Signal = "stop" | "start" | "etc";
 export type Timestamp = number;
@@ -56,5 +57,6 @@ export interface IDiscover {
 	nodes: NodeCollection;
 	eachNode(fn: () => any): void;
 
+	sync: Sync;
 	channels: string[];
 }

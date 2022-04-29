@@ -6,7 +6,7 @@
         "type": "node",
         "request": "launch",
         "runtimeExecutable": "node",
-        "runtimeArgs": ["--nolazy", "-r", "ts-node/register/transpile-only"],
+        "runtimeArgs": ["--nolazy","--trace-warnings", "-r", "ts-node/register/transpile-only"],
   
         "args": ["app.ts"],
         

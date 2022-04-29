@@ -9,7 +9,7 @@ import {
 	Timestamp,
 } from "../shared_definitions";
 import { Sync } from "../server/Sync";
-import { Node, uuid } from "../shared_definitions";
+import { Node, IID } from "../shared_definitions";
 import {
 	DiscoverMessage,
 	EventMessage,
@@ -32,9 +32,9 @@ export class SyncObject implements IRemoteProvider {
 		if (!this.discover.me.isMaster) {
 			throw new Error("ERROR: El cliente no es maestro");
 		}
-		//if (args.length != this._eventList[event].arguments.lenght) {
-		//	throw new Error("ERROR: Número incorrecto de argumentos");
-		//}
+		if (args.length != this._eventList[event].arguments.lenght) {
+			throw new Error("ERROR: Número incorrecto de argumentos");
+		}
 		const message: EventMessage = {
 			event: event,
 			timeout: timeout,
@@ -72,9 +72,8 @@ export class SyncObject implements IRemoteProvider {
 		// discover.send wrapper
 		this.discover.send(channel, message);
 	}
-
-	private _isMessageForMe(id?: uuid): boolean {
-		return id === this.discover.me.iid;
+	private _isMessageForMe(id?: IID): boolean {
+		return id === this.discover.me.id;
 	}
 
 	private _forceUpdates(): void {
@@ -110,8 +109,6 @@ export class SyncObject implements IRemoteProvider {
 
 			this.discover.on("promotion", () => {
 				this.sync = new Sync(this);
-				//@ts-ignore
-				this.discover.sync = this.sync;
 			});
 			this.discover.on("demotion", () => {
 				this.sync = null;
@@ -126,7 +123,7 @@ export class SyncObject implements IRemoteProvider {
 				const msg: PongResponse = {
 					serverTime: message.serverTime,
 					clientTime: performance.now(),
-					target: this.discover.me.iid,
+					target: this.discover.me.id,
 				};
 				this.send("pong", msg);
 			});

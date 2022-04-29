@@ -13,7 +13,7 @@ import { milliseconds, seconds, Timestamp } from "../shared_definitions";
 
 export class MediaController implements IMediaController {
 	public medium: HTMLMediaElement;
-	private _t0: Timestamp = 0;
+	private _t0: Timestamp;
 	private scheduled: boolean = false;
 
 	constructor(medium: HTMLMediaElement) {
@@ -64,7 +64,7 @@ export class SyncedEmitter implements ISyncedEventEmitter {
 		try {
 			const timeout = setTimeout(this.callbacks[callback], In, args);
 
-			if (In * 60000 > EVENT_REFRESHABLE)
+			if (In / 60000 > EVENT_REFRESHABLE)
 				this._refreshable.push({
 					callback: callback,
 					target: performance.now() + In,
