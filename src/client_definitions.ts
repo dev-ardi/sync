@@ -1,7 +1,6 @@
 interface ISyncable {}
 
 export interface IRemoteProvider {}
-export type CallbackCollection = Record<string, (...args: string[]) => any>;
 
 export interface IMediaController extends ISyncable {}
 

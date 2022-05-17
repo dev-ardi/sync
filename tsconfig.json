@@ -2,7 +2,9 @@
     "compilerOptions": {
       "target": "ES2015",
       "module": "commonjs",
-      "strict": false,
+      "strict": true,
+      "strictPropertyInitialization": false,
+
       "esModuleInterop": true,
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true,

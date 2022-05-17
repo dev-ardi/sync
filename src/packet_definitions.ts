@@ -1,22 +1,13 @@
 import { uuid, milliseconds, Timestamp } from "./shared_definitions";
 
-export interface DiscoverMessage {
-	target?: uuid;
-}
-export interface PongResponse extends DiscoverMessage {
-	clientTime: Timestamp;
+
+export interface PingMessage {
 	serverTime: Timestamp;
 }
 
-export interface PingMessage extends DiscoverMessage {
-	serverTime: Timestamp;
-}
 
-export interface OffsetMessage extends DiscoverMessage {
-	offset: milliseconds;
-}
-export interface EventMessage extends DiscoverMessage {
+export interface EventMessage {
 	event: string;
-	timeout: milliseconds;
+	timeout: Timestamp;
 	args: string[];
 }
