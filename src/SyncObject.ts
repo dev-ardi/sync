@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import dgram from "dgram";
 import { clearTimeout } from "timers";
 import { IRemoteProvider } from "./client_definitions";
-import { EventMessage,  } from "./packet_definitions";
+import { CatchupMessage, EventMessage, eventMessages,  } from "./packet_definitions";
 import {
 	MEDIA_SYNC_LOOP,
 	MEDIA_UPDATE_LOOP_TIMEOUT,
@@ -27,9 +27,93 @@ import { avg, enqueue } from "./utils";
 const node_discover = require("node-discover");
 
 class Client{
+	public addPing(ping: milliseconds) {
+		enqueue(this.pings, ping, TOTAL_PINGS) // TODO avg?
+	}
+	public computePings(ping?: milliseconds) {
+		if (ping) this.addPing(ping);
+		this.ping = avg(this.pings); 
+	}
+	public receivedEvent(event: EventMessage) {
+		this.emitter.newEvent(event);
+	}
+	//Fields
+	private pings: milliseconds[];
+	private ping: milliseconds;
 }
 class CatchUpClient{
 
+	//Methods
+	private send(msg:any ) { 
+		this.socket!.send(msg, this.port, this.address);}
+	private ping() { this.send(new Uint8Array());}
+	private requestData(){ this.send("getevents");}
+	private askVideoTimes(){this.send("getTimes");}
+	private receiver(msg: Uint8Array) {
+		this.client.addPing((performance.now() - this.t0)/2);
+		if (msg.length > 0) { // Resync
+			const message: CatchupMessage = JSON.parse(msg.toString());
+			if (!this.locked){
+				window.clearTimeout(pingsTimeout);
+				this.process(message.events!);
+				this.locked = true;
+				return
+			}
+			processMedia(message.media)
+		}
+	}
+	private process(events: eventMessages) {
+		this.client.computePings()
+		for (const event in events) {
+			if (Object.prototype.hasOwnProperty.call(events, event)) {
+				const element = events[event];
+				this.client.receivedEvent(event)
+			}
+		}
+		for (const tuple of media) {
+			const medium = this._media.find(
+				(element) => element.medium.src === tuple[0]
+			);
+			if (medium) {
+				console.log("Scheduled via catch-up at " + (+new Date() % 1000000));
+				medium.onScheduled(
+					tuple[1] + this._ping.ping / 1000,
+					performance.now()
+				);
+			} else console.log(`Warning: medium ${tuple[0]} not found!`);
+		}
+		
+	};
+	//Fields
+	private socket: dgram.Socket;
+	address;
+	port;
+	t0;
+	media;
+	locked;// TODO move
+	client;
+	constructor(address: IP, port: number, client: Client){
+		this.address = address;
+		this.port = port;
+		this.client = client;
+
+		this.socket = dgram.createSocket("udp4")
+		this.socket.bind();
+		this.socket.on("listening", () => {
+			// I specify window because typescript gets confused
+			let pingsTimeout = window.setTimeout(() => {
+				console.error("data not received");
+			}, 5000);
+			// Initial pinging
+			this.t0 = performance.now();
+			for (let index = 0; index < TOTAL_PINGS; index++)
+				this.ping()
+			this.requestData();	
+			this.t0 = (this.t0 + performance.now())/2;
+			
+			this.socket!.on("message", (msg)=>this.receiver(msg));
+		});
+	}
 }
 class Master{
 	
@@ -118,10 +202,10 @@ export class SyncObject implements IRemoteProvider {
 				  })
 					break;
 				  case "getTimes":
-					response = JSON.stringify({
+					response = JSON.stringify(()=>{ let x = {
 						events: this.eventsIn,
 						media: getMedia()
-				  })
+				  }})
 				default:
 					response = new Uint8Array()
 					break;
@@ -175,7 +259,7 @@ export class SyncObject implements IRemoteProvider {
 	private pings: queue<milliseconds> = []; // This is a queue with the last MAX_OFFSET_ARRAY_LENGHT offsets
 	private _ping = { ping: 0 };
 	private _lastOffset: milliseconds;
-	private eventsIn: Record<string, EventMessage> = {};
+	private eventsIn: eventMessages  = {};
 	private interval: NodeJS.Timer | null = null;
 
 	constructor(
@@ -198,13 +282,10 @@ export class SyncObject implements IRemoteProvider {
 	private _t0: Timestamp;
 	private _masterPort: number;
 	private _masterAddress: IP;
-
-
-
-
-
-	
 	private _onMaster(master: dMe, b: any, rinfo: dgram.RemoteInfo) {
+
+		const CUClient = new CatchUpClient(rinfo.address, master.initPort!);
+
 		const send = (msg:any ) => this._reconnectionSocket!.send(msg, master.initPort, this._masterAddress);
 		const ping = () => send(new Uint8Array());
 		const requestData = ()=> send("getevents");
@@ -222,58 +303,8 @@ export class SyncObject implements IRemoteProvider {
 		}
 
 
-		this._reconnectionSocket.on("listening", () => {
-			// I specify window because typescript gets confused
-			let pingsTimeout = window.setTimeout(() => {
-				console.error("data not received");
-			}, 5000);
-			this._t0 = performance.now();
-			for (let index = 0; index < TOTAL_PINGS; index++)
-				ping()
-			requestData();	
-			this._t0 = (this._t0 + performance.now())/2;
-			
-			this._reconnectionSocket!.on("message", (msg) => {
-				enqueue(this.pings, (performance.now() - this._t0)/2, TOTAL_PINGS)
-				if (msg.length > 0) { // Resync
-					const message = JSON.parse(msg.toString());
-					events = message.events;
-					if (!locked){
-						window.clearTimeout(pingsTimeout);
-						process();
-						locked = true;
-					}
-					processMedia(message.media)
-				}
-			});
-		});
-		const process = () => {
-			this._ping.ping = avg(this.pings)
-			for (const event in events) {
-				if (Object.prototype.hasOwnProperty.call(events, event)) {
-					const element = events[event];
-					console.log("adjust: " + -(this._ping.ping + this._emitter.delay))
-					this._emitter.eventIn(
-						element.event,
-						element.timeout,
-						element.args
-					);
-				}
-			}
-			for (const tuple of media) {
-				const medium = this._media.find(
-					(element) => element.medium.src === tuple[0]
-				);
-				if (medium) {
-					console.log("Scheduled via catch-up at " + (+new Date() % 1000000));
-					medium.onScheduled(
-						tuple[1] + this._ping.ping / 1000,
-						performance.now()
-					);
-				} else console.log(`Warning: medium ${tuple[0]} not found!`);
-			}
-			
-		};
+		
+		
 		const processMedia = (media: string[][])=>{ //TODO duplicate code!
 			for (const tuple of media) {
 				const medium = this._media.find(
