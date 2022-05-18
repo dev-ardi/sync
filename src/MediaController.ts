@@ -1,47 +1,41 @@
-import { IMediaController } from "./client_definitions";
 import {
 	FRAME_THRESHOLD,
 	MAX_SPEEDUP,
 	MEDIA_SYNC_LOOP,
-	SYNC_DELTA_THRESHOLD,
-} from "./shared_consts";
-import { milliseconds, seconds, Timestamp } from "./shared_definitions";
+	SYNC_DELTA_THRESHOLD
+} from "./consts";
+import { milliseconds, Timestamp } from "./definitions";
+import { Client } from "./Client";
 
-export class MediaController implements IMediaController {
+
+
+export class MediaController {
 	public medium: HTMLMediaElement;
-	private _t0: Timestamp = NaN;
+	private initialTime: Timestamp = NaN;
 	public scheduled: boolean = false;
-	public seek0: milliseconds = 0;
+	public seek: milliseconds = 0;
 
-	constructor(medium: HTMLMediaElement) {
+	constructor(medium: HTMLMediaElement, client: Client, destroyable = false) {
 		this.medium = medium;
+		this.medium.onended = () => {
+			if (destroyable)
+				client.destroy(this.medium.src);
+		};
+
 	}
-	public sync(offset: milliseconds): void {
-		/* All units are in ms because 
+	public sync(): void {
+		/* All units are in ms because
 			1) multiply is faster than divide
 			2) easier to think about because they are smaller units
 			3) you only have to make the division back in the seek case
 		*/
-		if (!this.scheduled) return;
-		const targetVideoTimeAtNextTick: milliseconds =
-			performance.now() -
-			this._t0 + // Target time now
-			this.seek0 + // Account for initial seek offset
+		if (!this.scheduled)
+			return;
+		const targetVideoTimeAtNextTick: milliseconds = performance.now() - this.initialTime + // Target time now
 			MEDIA_SYNC_LOOP + // Target time then
-			offset; // Account for the delay or something
-			const videoNow: milliseconds = this.medium.currentTime * 1000;
-			const delta: milliseconds = targetVideoTimeAtNextTick - videoNow;
-		// DEBUG:
-		const debugInfo = {
-			targetNow : performance.now() - this._t0,
-			targetThen : performance.now() - this._t0 + MEDIA_SYNC_LOOP,
-			targetAfterSeek : performance.now() - this._t0 + MEDIA_SYNC_LOOP + this.seek0,
-			delta: delta,
-			gap: delta - MEDIA_SYNC_LOOP,
-			t0: this._t0, // Target time now
-			seek0: this.seek0, // Account for initial seek offset
-		};
-		//console.log(JSON.stringify(debugInfo))
+			this.seek; // Account for initial seek offset
+		const videoNow: milliseconds = this.medium.currentTime * 1000;
+		const delta: milliseconds = targetVideoTimeAtNextTick - videoNow;
 		if (true)
 			//Debug
 			//@ts-ignore
@@ -51,8 +45,8 @@ export class MediaController implements IMediaController {
 			video time: ${Math.round(this.medium.currentTime * 1000)}\n
 			perf.now: ${Math.round(performance.now())}
 			`;
-		if (Math.abs(delta) < SYNC_DELTA_THRESHOLD) 
-			return
+		if (Math.abs(delta) < SYNC_DELTA_THRESHOLD)
+			return;
 
 		if (Math.abs(delta) > FRAME_THRESHOLD) {
 			// seek if it's too big.
@@ -69,15 +63,13 @@ export class MediaController implements IMediaController {
 		this.medium.playbackRate =
 			speedupRate < 0 ? 1 - MAX_SPEEDUP : 1 + MAX_SPEEDUP;
 	}
-	public onScheduled(seek: seconds, t0: Timestamp) {
-		this.medium.currentTime = seek;
-		this.medium.onended = () => (this.scheduled = false);
-		this.seek0 = seek * 1000;
+	public onScheduled(t0: Timestamp) {
 		this.medium.play();
 		this.scheduled = true;
-		this._t0 = t0; // Date.getTime is faster than performance.now() and we don't need that much precision
+		this.initialTime = t0; // Date.getTime is faster than performance.now() and we don't need that much precision
+
 		//@ts-ignore
-		window.absoluteT0 = (+new Date() - this.seek0) % 10000;
-		this.sync(0);
+		window.absoluteT0 = (+new Date() - this.seek) % 10000;
+		this.sync();
 	}
 }

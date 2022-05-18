@@ -1,9 +1,8 @@
-import { ISyncedEventEmitter } from "./client_definitions";
-import { EVENT_REFRESHABLE, EVENT_SYNC_LOOP, EVENT_TIMEOUT } from "./shared_consts";
-import { CallbackCollection, milliseconds, queue, Timestamp } from "./shared_definitions";
+import { EVENT_TIMEOUT } from "./consts";
+import { CallbackCollection, milliseconds, queue, Timestamp } from "./definitions";
 import { avg, enqueue } from "./utils";
 
-export class SyncedEmitter implements ISyncedEventEmitter {
+export class Emitter {
 	readonly callbacks: CallbackCollection;
 	ping;
 	delay = 0

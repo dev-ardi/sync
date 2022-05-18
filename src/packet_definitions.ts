@@ -1,18 +1,15 @@
-import { uuid, milliseconds, Timestamp, seconds } from "./shared_definitions";
+import { milliseconds, seconds } from "./definitions";
 
-
-export interface PingMessage {
-	serverTime: Timestamp;
-}
 
 export type eventMessages = Record<string, EventMessage>
+export type mediaTuple = [src: string, seek: seconds];
 export interface EventMessage {
 	event: string;
-	timeout: Timestamp;
+	timeout: milliseconds;
 	args: string[];
 }
 
 export interface CatchupMessage{
 	events?: eventMessages;
-	media?: [src: string, seek: seconds][];
+	media?: mediaTuple[]
 }

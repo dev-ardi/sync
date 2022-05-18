@@ -1,4 +1,4 @@
-import { isPromise } from "util/types";
+import { MediaController } from "./MediaController";
 
 export type Signal = "stop" | "start" | "etc";
 export type Timestamp = number;
@@ -11,6 +11,7 @@ export type IP = string;
 export type uuid = string;
 export type CallbackCollection = Record<string, (...args: string[]) => void>;
 export type NodeCollection = Record<uuid, dMe>;
+export type mediaCollection = Record<string, MediaController>
 export type queue<T> = Array<T>;
 
 
@@ -32,7 +33,7 @@ export interface dMe {
 	initPort?: number;
 }
 
-export interface IDiscover {
+export interface Discover {
 	on(event: DiscoverEvent, callback: (arg: dMe, ...args: any) => void): void;
 	join(channel: string, callback: (message: any) => void): void;
 	leave(channel: string): void;
