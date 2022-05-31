@@ -49,21 +49,21 @@ function fn(arg: SyncObject){
     const arg1 = 500;
     const arg2 = 800;
 
-    arg.addEventIn("perfcheck", arg1, (performance.now() + arg1).toString());
-    arg.addEventIn("perfcheck", arg2, (performance.now() + arg2).toString());
+    arg.scheduleEvent("perfcheck", arg1, (performance.now() + arg1).toString());
+    arg.scheduleEvent("perfcheck", arg2, (performance.now() + arg2).toString());
 
 }, 2000);
 }
 function fn2(arg: SyncObject){
     console.log("fn2")
     const arg1 = 3000
-    arg.addEventIn("dlog", arg1, (performance.now() + arg1).toString())
+    arg.scheduleEvent("dlog", arg1, (performance.now() + arg1).toString())
 }
 
 function fn3(arg: SyncObject){
     console.log("fn3")
 
     return setInterval(()=>{
-        arg.addEventIn("dlog", 500, ((+new Date()) % 1000000).toString());
+        arg.scheduleEvent("dlog", 500, ((+new Date()) % 1000000).toString());
     }, 1000)
 }

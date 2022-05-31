@@ -1,7 +1,7 @@
-import { milliseconds, seconds } from "./definitions";
+import { milliseconds, seconds, Timestamp } from "./definitions";
 
 
-export type eventMessages = Record<string, EventMessage>
+export type eventMessages = Record<string, EventMessage> //Need a unique id and a uuid is overkill
 export type mediaTuple = [src: string, seek: seconds];
 export interface EventMessage {
 	event: string;

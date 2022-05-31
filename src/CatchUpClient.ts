@@ -12,11 +12,13 @@ import {
 import { IP, milliseconds, seconds } from "./definitions";
 import { Client } from "./Client";
 
-
 export class CatchUpClient {
 	public async destroy(): Promise<void> {
-		return new Promise<void>((resolve) =>
+		return new Promise<void>((resolve) =>{
+			window.clearInterval(this.pingsInterval)
 			this.socket.close(() => resolve())
+		}
+
 		);
 	}
 	//Methods
@@ -28,34 +30,32 @@ export class CatchUpClient {
 	}
 	private requestData() {
 		this.send("getevents");
+		this.hasDoneInitialProcessing = false;
 	}
 	private askVideoTimes() {
 		this.send("getTimes");
 	}
 	private receiver(msg: Uint8Array) {
-		this.client.addPing((performance.now() - this.t0) / 2);
-		if (msg.length > 0) {
-			// Resync
-			const message: CatchupMessage = JSON.parse(msg.toString());
-			if (!this.locked) {
-				window.clearTimeout(this.pingsTimeout);
-				this.processEvents(message.events!);
-				this.processMedia(
-					message.media!,
-					(src: string) => {
-						console.log(
-							"Scheduled via catch-up at " +
-								(+new Date() % 1000000)
-						);
-						this.client.scheduleMedia(src);
-					}
+		const ping = (performance.now() - this.t0) / 2;
+		if (this.hasDoneInitialProcessing) this.client.computePings(ping);
+		else this.client.addPing(ping);
+		if (msg.length === 0) return;
+
+		const message: CatchupMessage = JSON.parse(msg.toString());
+		if (!this.hasDoneInitialProcessing) {
+			window.clearTimeout(this.pingsTimeout);
+			this.processEvents(message.events!);
+			this.processMedia(message.media!, (src: string) => {
+				console.log(
+					"Scheduled via catch-up at " + (+new Date() % 1000000)
 				);
-				this.locked = true;
-			}
-			this.processMedia(message.media!, (src: string, seek: seconds) =>
-				this.client.updateMediaSeek(src, seek)
-			);
+				this.client.scheduleMedia(src);
+			});
+			this.hasDoneInitialProcessing = true;
 		}
+		this.processMedia(message.media!, (src: string, seek: seconds) =>
+			this.client.updateMediaSeek(src, seek)
+		);
 	}
 	private processEvents(events: eventMessages) {
 		this.client.computePings();
@@ -71,7 +71,7 @@ export class CatchUpClient {
 		callback: (src: string, seek: seconds) => void
 	) {
 		for (const tuple of media) {
-			if (this.client.getMedia(tuple[0])) callback(tuple[0], tuple[1]);
+			if (this.client.findMedia(tuple[0])) callback(tuple[0], tuple[1]);
 			else console.log(`Warning: medium ${tuple[0]} not found!`);
 		}
 	}
@@ -81,14 +81,15 @@ export class CatchUpClient {
 	private address;
 	private port;
 	private t0: milliseconds;
-	private locked = false; // TODO move
+	private hasDoneInitialProcessing = false;
 	private client;
+	private pingsInterval: number;
 	constructor(address: IP, port: number, client: Client) {
 		this.address = address;
 		this.port = port;
 		this.client = client;
 
-		this.socket = dgram.createSocket("udp4");
+		this.socket = dgram.createSocket("udp4", (msg) => this.receiver(msg));
 		this.socket.bind();
 		this.socket.on("listening", () => {
 			// I specify window because typescript gets confused
@@ -100,18 +101,27 @@ export class CatchUpClient {
 			for (let index = 0; index < TOTAL_PINGS; index++) this.ping();
 			this.requestData();
 			this.t0 = (this.t0 + performance.now()) / 2;
-			//Setup receiver
-			this.socket!.on("message", (msg) => this.receiver(msg));
-
 			//Ping intervals
-			setInterval(() => {
+			this.pingsInterval =  window.setInterval(() => {
 				this.ping();
 				this.t0 = performance.now();
 			}, PING_LOOP_TIMEOUT);
-			setInterval(() => {
+
+			 setTimeout(() => {
+			 	this.askVideoTimes();
+			 	this.t0 = performance.now();
+			 }, 500);
+			 setTimeout(() => {
 				this.askVideoTimes();
 				this.t0 = performance.now();
-			}, MEDIA_UPDATE_LOOP_TIMEOUT);
+			}, 1000);
+			setTimeout(() => {
+				this.askVideoTimes();
+				this.t0 = performance.now();
+			}, 2000);
 		});
+
+		this.socket.on("close", ()=>{console.log("Catch-up server socket closed!")})
+
 	}
 }
