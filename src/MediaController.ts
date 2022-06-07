@@ -15,13 +15,10 @@ export class MediaController {
 	public scheduled: boolean = false;
 	public seek: milliseconds = 0;
 
-	constructor(medium: HTMLMediaElement, client: Client, destroyable = false) {
+	constructor(medium: HTMLMediaElement, client: Client) {
 		this.medium = medium;
-		this.medium.onended = () => {
-			if (destroyable)
-				client.destroyMedia(this.medium.src);
-		};
-
+		this.medium.addEventListener('ended', ()=>
+			client.destroyMedia(this.medium.src))
 	}
 	public sync(): void {
 		/* All units are in ms because
@@ -31,43 +28,45 @@ export class MediaController {
 		*/
 		if (!this.scheduled)
 			return;
-		const targetVideoTimeAtNextTick: milliseconds = Date.now() - this.initialTime + // Target time now
-			MEDIA_SYNC_LOOP + // Target time then
+		const targetVideoTimeAtNextTick: milliseconds = +new Date() - this.initialTime + // Target time now
 			this.seek; // Account for initial seek offset
 		const videoNow: milliseconds = this.medium.currentTime * 1000;
 		const delta: milliseconds = targetVideoTimeAtNextTick - videoNow;
-		console.log(`delta was ${delta}`)
 		if (true)
-			//Debug
-			//@ts-ignore
-			document.getElementById("currentTime").innerHTML =
-				//@ts-ignore
-				`abs t0: ${Math.round((window.absoluteT0 - this.seek) % 1000000)}
-			video time: ${Math.round(videoNow)}\n
-			perf.now: ${Math.round(performance.now())}
-			`;
-		if (Math.abs(delta) < SYNC_DELTA_THRESHOLD)
+		//Debug
+		
+		document.getElementById("currentTime")!.innerHTML =
+		//@ts-ignore
+			`${window.isMaster()? 'Master': 'Slave'} 
+			t0: ${Math.round((this.initialTime - this.seek) % 1000000)}
+			video time: ${Math.round(videoNow)} 
+			delta: ${delta}`;
+			
+		return
+		if (Math.abs(delta) < SYNC_DELTA_THRESHOLD){
+			this.medium.playbackRate = 1;	
 			return;
-
-		if (Math.abs(delta) > SEEK_THRESHOLD) {
+		}
+			
+		if (Math.abs(delta) > (1 + MAX_SPEEDUP) * MEDIA_SYNC_LOOP ) { // 210 with current settings
 			// seek if it's too big.
 			this.medium.currentTime +=
-				(delta - MEDIA_SYNC_LOOP) / 1000;
+				(delta) / 1000;
 			this.medium.playbackRate = 1;
 			return;
 		}
-		const speedupRate = delta / MEDIA_SYNC_LOOP; // AKA how many seconds per second
-		if (Math.abs(1 - speedupRate) < MAX_SPEEDUP) {
-			this.medium.playbackRate = speedupRate;
+		const speedupRate = (delta) / ( MEDIA_SYNC_LOOP); // AKA how many seconds per second
+		if (Math.abs(speedupRate) < MAX_SPEEDUP) {
+			this.medium.playbackRate = 1 + speedupRate;
 			return;
 		}
 		this.medium.playbackRate =
-			speedupRate < 0 ? 1 - MAX_SPEEDUP : 1 + MAX_SPEEDUP;
+			(speedupRate < 0) ? 1 - MAX_SPEEDUP : 1 + MAX_SPEEDUP;
 	}
 	public onScheduled() {
 		this.medium.play();
 		this.scheduled = true;
-		this.initialTime = Date.now(); 
+		this.initialTime = +new Date(); 
 		this.sync();
 	}
 }

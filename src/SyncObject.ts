@@ -31,14 +31,14 @@ export class SyncObject {
 		this.master.scheduleEvent(message);
 	}
 	public scheduleMedia(
-		media: HTMLMediaElement,
+		src: string,
 		schedule: milliseconds,
 		seek: seconds = 0
 	) {
 		this.scheduleEvent(
 			"Schedule_media",
 			schedule,
-			media.src,
+			src,
 			seek.toString()
 		);
 	}

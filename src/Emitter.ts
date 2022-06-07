@@ -21,10 +21,6 @@ export class Emitter {
 			console.log(`event expired by ${-(timeout - EVENT_TIMEOUT)}ms `);
 			return;
 		}
-		//TODO add target
-		// if (event.event === "Schedule_media"){
-		// 	event.args.push[target]
-		// }
 		timeout -= this.delay;
 		try {
 			const at = timeout + performance.now() + ping;
@@ -47,7 +43,7 @@ export class Emitter {
 		return this.callbacks;
 	}
 	private scheduledEvent(callback: Function, at: Timestamp, args: any) {
-		callback(args);
+		callback.apply(null, args);
 		enqueue(this.delays, performance.now() - at, 5);
 		this.delay = avg(this.delays);
 	}

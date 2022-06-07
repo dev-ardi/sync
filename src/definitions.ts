@@ -26,9 +26,7 @@ type DiscoverEvent =
 
 export interface dMe {
 	isMaster: boolean;
-	isMasterEligible: boolean;
 	weight: number;
-	address: IP;
 	id?: uuid;
 	initPort?: number;
 }

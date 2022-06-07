@@ -5,7 +5,7 @@ import {
 	mediaTuple,
 } from "./packet_definitions";
 import {
-	MEDIA_UPDATE_LOOP_TIMEOUT,
+	MEDIA_LOOP_TIMEOUT,
 	PING_LOOP_TIMEOUT,
 	TOTAL_PINGS,
 } from "./consts";
@@ -16,6 +16,7 @@ export class CatchUpClient {
 	public async destroy(): Promise<void> {
 		return new Promise<void>((resolve) =>{
 			window.clearInterval(this.pingsInterval)
+			window.clearInterval(this.mediaInterval)
 			this.socket.close(() => resolve())
 		}
 
@@ -49,7 +50,7 @@ export class CatchUpClient {
 				console.log(
 					"Scheduled via catch-up at " + (+new Date() % 1000000)
 				);
-				this.client.scheduleMedia(src);
+				this.client.findMedia(src)?.onScheduled();
 			});
 			this.hasDoneInitialProcessing = true;
 		}
@@ -78,6 +79,7 @@ export class CatchUpClient {
 	//Fields
 	private socket: dgram.Socket;
 	private pingsTimeout: number;
+	private mediaInterval: number;
 	private address;
 	private port;
 	private t0: milliseconds;
@@ -106,7 +108,11 @@ export class CatchUpClient {
 				this.ping();
 				this.t0 = performance.now();
 			}, PING_LOOP_TIMEOUT);
-
+			this.mediaInterval =  window.setInterval(() => {
+				this.askVideoTimes();
+				this.t0 = performance.now();
+			}, MEDIA_LOOP_TIMEOUT);
+			
 			 setTimeout(() => {
 			 	this.askVideoTimes();
 			 	this.t0 = performance.now();
