@@ -2,6 +2,9 @@
 
 This is a library that allows for synchronization between devices that run electron, or node.js. 
 
+This is meant to be used a multiple process (or multiple device) scenario. 
+This uses a master-slave relationship, where the master emits synchronized events to all of the slaves
+
 This library allows for the synchronization of 
 - Events
 - HTML5 media
@@ -22,8 +25,6 @@ onNewMaster: (...args: any) => any
 ```
 
 # How to use
-This is meant to be used a multiple process (or multiple device) scenario. 
-This uses a master-slave relationship, where the master emits synchronized events to all of the slaves. When a new master is elected these events get called:
 ## Creating the sync object:
 - You pass it a (optional) dictionary of events (callbacks): 
 ```js
