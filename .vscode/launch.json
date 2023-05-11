@@ -1,27 +1,30 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Launch Program",
-        "program": "${workspaceFolder}/build/app.js",
-        "request": "launch",
-        "skipFiles": [
-          "<node_internals>/**"
-        ],
-        "type": "node"
-      },
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/build/app.js",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
 
-      {
-        "name": "ts-node",
-        "type": "node",
-        "request": "launch",
-        "runtimeExecutable": "node",
-        "runtimeArgs": ["--nolazy","--trace-warnings", "-r", "ts-node/register/transpile-only"],
-  
-        "args": ["app.ts"],
-        
-        "cwd": "${workspaceRoot}",
-        "internalConsoleOptions": "openOnSessionStart",
-      }
-    ]
-  }
+    {
+      "name": "ts-node",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--nolazy",
+        "--trace-warnings",
+        "-r",
+        "ts-node/register/transpile-only"
+      ],
+
+      "args": ["app.ts"],
+
+      "cwd": "${workspaceRoot}",
+      "internalConsoleOptions": "openOnSessionStart"
+    }
+  ]
+}

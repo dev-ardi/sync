@@ -1,7 +1,5 @@
 import assert from "assert";
 
-describe('', () => {
-    it('', () => {
-        
-    });
+describe("", () => {
+  it("", () => {});
 });

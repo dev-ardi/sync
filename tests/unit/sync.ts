@@ -1,6 +1,4 @@
 import assert from "assert";
-describe('sync', () => {
-    it('', () => {
-        
-    });
+describe("sync", () => {
+  it("", () => {});
 });

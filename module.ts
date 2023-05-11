@@ -1,3 +1,4 @@
-import { SyncObject } from "./src/SyncObject";
+import Discover from "./src/js/discover";
 
-export {SyncObject}
+export { SyncObject } from "./src/SyncObject";
+export { Discover };

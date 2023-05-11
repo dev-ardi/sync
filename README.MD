@@ -1,49 +1,62 @@
 # Sync-lib
 
-This is a library that allows for synchronization between devices that run electron, or node.js. 
+Esta es una libreria que permite la sincronización entre dispositivos que ejecutan electron o node.js.
 
-This is meant to be used a multiple process (or multiple device) scenario. 
-This uses a master-slave relationship, where the master emits synchronized events to all of the slaves
+Esto está destinado a ser utilizado en un escenario de múltiples procesos (o múltiples dispositivos). Esto utiliza una relación maestro-esclavo, donde el maestro emite eventos sincronizados a todos los esclavos.
 
-This library allows for the synchronization of 
-- Events
-- HTML5 media
+**Esta biblioteca permite la sincronización de:**
 
-It exposes two functions and the constructor:
+- Eventos
+- HTML5 Media (Audio y Video)
+
+Expone dos funciones y el constructor:
 
 ```ts
-scheduleEvent(event: string, timeout: milliseconds, ...args: string[])
-scheduleMedia(src: string, schedule: milliseconds, seek: seconds = 0)
-new SyncObject(events?: CallbackCollection, discover?: Discover)
+scheduleEvent(evento: string, tiempoDeEspera: milisegundos, ...args: string[])
+scheduleMedia(src: string, programar: milisegundos, buscar: segundos = 0)
+new SyncObject(eventos?: CallbackCollection, descubrir?: Discover)
 ```
+Y tres eventos:
 
-And three events: 
 ```ts
-onPromotion: (...args: any) => any
-onDemotion: (...args: any) => any 
-onNewMaster: (...args: any) => any
+onPromotion: (...args: any) => any // Se ejecuta cuando el proceso es elegido como maestro
+onDemotion: (...args: any) => any // Se ejecuta cuando el proceso es degradado de maestro a esclavo
+onNewMaster: (...args: any) => any // Se ejecuta cuando se ha encontrado un nuevo maestro
 ```
 
-# How to use
-## Creating the sync object:
-- You pass it a (optional) dictionary of events (callbacks): 
-```js
-{selectVideo: argSrc=>document.getElementById('vidElement1').src = argSrc}
+## Cómo usar
+### Crear el objeto de sincronización:
+Se le pasa un diccionario de callbacks (opcional):
+```ts
+{
+    selectVideo: argSrc => document.getElementById('vidElement1').src = argSrc,
+    cambioSlide: argSlide => engine.changeSlide(argSlide)
+}
 ```
--  and an (optional) instance of [node-discover](https://www.npmjs.com/package/node-discover). 
-## Using the object
 
-All of the logic should be in the callbacks provided by the library:
+Y una opcionalmente una instancia de `node-discover`.
 
-- `onPromotion`: This happens on the process that gets elected as a master. All of the synchronization logic should happen here. Example:
+### Usar el objeto
+Toda la lógica debe estar en los callbacks proporcionados por la biblioteca:
+
+`onPromotion`: Esto sucede en el proceso que es elegido como maestro. Toda la lógica de sincronización debe ocurrir aquí. Ejemplo:
 
 ```ts
 sync.onPromotion = ()=>{
     scheduleEvent('selectVideo', 1000, 'videos/vid1.webm')
-    scheduleMedia(document.getElementById('vidElement1').src, 1000)
+    scheduleMedia('23424_mi_video.mp4', 1000)
     }
 ```
-- `onNewMaster`: This happens on all slave processes. All of the client logic should happen here.
-- `onDemotion`: This might happen if a master with higher weight than this is found. All destruction logic might happen here, but this is unlikely to get called. Note that the underlying node-discover instance will not get garbage collected, its socket will still be opening and listening, aswell as sending hello messages.
-- `scheduleEvent` Synchronize events by callback name.
-- `scheduleMedia` Synchronize media by src in with an optional seek time.
+
+`onNewMaster`: Esto sucede en todos los procesos esclavos. Toda la lógica del cliente debe ocurrir aquí.
+
+`onDemotion`: Esto puede suceder si se encuentra un maestro con un peso más alto que este. Toda la lógica de destrucción podría ocurrir aquí, pero es poco probable que se llame. Hay que tener en cuenta que la instancia subyacente de `node-discover` no se eliminará, su socket seguirá abriendo y escuchando, así como enviando mensajes `hello`.
+
+`scheduleEvent` Sincronizar eventos por nombre de callback.
+
+Ejemplo:
+```ts
+scheduleEvent('cambioSlide`, 35000, '216562');
+```
+
+`scheduleMedia` Sincronizar medios por src con un *seek time* opcional.
