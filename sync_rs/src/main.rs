@@ -41,7 +41,7 @@ async fn main() {
     loop {
         let ipc = IpcClient::new(port).await;
         let on_promotion = || {};
-        let on_demotion = |state| {};
+        let on_demotion = |_state| {};
         let discover_server = Discover::new(ipc, on_promotion, on_demotion, None, None)
             .unwrap_or_else(|e| panic!("failed to create socket: {e}"));
         let err = discover_server.start().await;
