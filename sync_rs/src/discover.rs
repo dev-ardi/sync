@@ -180,14 +180,11 @@ impl Discover {
                 }
 
                 if let Masterness::Slave(slave) = &self.ness {
-                    if timeout(slave.master_state.last_seen_master) {
-                        if !self
+                    if timeout(slave.master_state.last_seen_master) && !self
                             .slaves
                             .values()
-                            .any(|x| x.0 > self.started_at || timeout(x.1))
-                        {
-                            self.promote(tx.clone()).await;
-                        }
+                            .any(|x| x.0 > self.started_at || timeout(x.1)) {
+                        self.promote(tx.clone()).await;
                     }
                 }
             }
