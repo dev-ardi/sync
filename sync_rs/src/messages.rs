@@ -1,46 +1,75 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::SystemTime};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MediaEvent {
-    curr_time: std::time::Duration,
-
-    #[serde(flatten)]
-    _rest: HashMap<String, serde_json::Value>,
+pub struct SentMediaEvent {
+    pub measurement_at: SystemTime,
+    pub media: IpcMediaEvent,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GenericEvent {
-    execute_at: std::time::Duration,
+pub struct IpcMediaEvent {
+    pub media: Vec<MediaEvent>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MediaEvent {
+    pub current_time: std::time::Duration,
 
     #[serde(flatten)]
-    _rest: HashMap<String, serde_json::Value>,
+    pub rest: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ErrorMessage(pub String);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GenericEvent {
+    pub execute_at: SystemTime,
+
+    #[serde(flatten)]
+    pub rest: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateStatus {
-    event: String,
     is_master: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WhatchaGot {}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GotSum {
+    pub time: SystemTime,
+    pub events: Vec<GenericEvent>,
+    pub media: Vec<MediaEvent>,
 }
 
 impl UpdateStatus {
     pub fn new(is_master: bool) -> Self {
-        Self {
-            event: String::from("UpdateStatus"),
-            is_master,
-        }
+        Self { is_master }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum SentEvent {
+pub enum SentEventIPC {
     MediaEvent(MediaEvent),
     GenericEvent(GenericEvent),
     UpdateStatus(UpdateStatus),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum RecvEventMaster {
+pub enum EventsMasterSlave {
+    MediaEvent(MediaEvent),
+    GenericEvent(GenericEvent),
+    UpdateStatus(UpdateStatus),
+    Ping(WhatchaGot),
+    Pong(GotSum),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum RecvEventIPC {
     MediaEvent(MediaEvent),
     GenericEvent(GenericEvent),
 }

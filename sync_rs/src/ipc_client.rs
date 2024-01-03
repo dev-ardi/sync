@@ -8,9 +8,9 @@ use tokio::{
 use crate::{
     discover::MasterState,
     // discover::SlaveState,
-    event_client::EventClient,
     event_server::EventServer,
-    messages::{GenericEvent, MediaEvent, RecvEventMaster, SentEvent},
+    messages::{ErrorMessage, GenericEvent, MediaEvent, RecvEventIPC, SentEventIPC},
+    EventClient,
     Master,
     Slave,
 };
@@ -18,11 +18,6 @@ use crate::{
 // Not necessarily on the same machine though. If at any point this is a requirement rename this.
 pub struct IpcClient {
     sock: TcpStream, // Not a mutex because we won't read and write form it at the same time.
-}
-
-struct IpcCallbacks<F, G> {
-    pub media: F,
-    pub generic: G,
 }
 
 impl IpcClient {
@@ -35,21 +30,20 @@ impl IpcClient {
 
 pub struct MasterIpc(pub IpcClient);
 impl MasterIpc {
-    pub async fn start<F: Fn(MediaEvent) + Send + Sync, G: Fn(GenericEvent) + Send + Sync>(
-        &mut self,
-        callbacks: IpcCallbacks<F, G>,
-    ) {
+    pub async fn start<F: Fn(RecvEventIPC) + Send + Sync>(&mut self, callbacks: F) {
         loop {
             let mut buf = Vec::new();
             if let Err(e) = self.0.sock.read_to_end(&mut buf).await {
                 eprintln!("Error reading data from Deneva: {e}");
                 continue;
             };
-            match serde_json::from_slice::<RecvEventMaster>(&buf) {
-                Ok(RecvEventMaster::MediaEvent(event)) => (callbacks.media)(event),
-                Ok(RecvEventMaster::GenericEvent(event)) => (callbacks.generic)(event),
+            match serde_json::from_slice::<RecvEventIPC>(&buf) {
+                Ok(ev) => (callbacks)(ev),
                 Err(e) => {
                     eprintln!("Error reading data from Deneva: {e}");
+                    let err = ErrorMessage(format!("Error reading message: {e}"));
+                    let err = serde_json::to_vec(&err).unwrap();
+                    let _ = self.0.sock.write(&err);
                     continue;
                 }
             }
@@ -59,7 +53,7 @@ impl MasterIpc {
 pub struct SlaveIpc(pub IpcClient);
 
 impl SlaveIpc {
-    pub async fn send(&mut self, ev: SentEvent) -> Result<(), std::io::Error> {
+    pub async fn send(&mut self, ev: SentEventIPC) -> Result<(), std::io::Error> {
         let ev = serde_json::to_vec(&ev).expect("Can't serialize event");
         self.0.sock.write(&ev).await?;
         Ok(())

@@ -18,10 +18,10 @@ use crate::Slave;
 
 #[derive(Debug, Clone)]
 pub struct MasterState {
-    ip_master: SocketAddr,
-    master_time: SystemTime,
-    last_seen_master: Instant,
-    master_priority: Option<i32>,
+    pub ip_master: SocketAddr,
+    pub master_time: SystemTime,
+    pub last_seen_master: Instant,
+    pub master_priority: Option<i32>,
 }
 
 pub struct Discover {
@@ -180,10 +180,12 @@ impl Discover {
                 }
 
                 if let Masterness::Slave(slave) = &self.ness {
-                    if timeout(slave.master_state.last_seen_master) && !self
+                    if timeout(slave.master_state.last_seen_master)
+                        && !self
                             .slaves
                             .values()
-                            .any(|x| x.0 > self.started_at || timeout(x.1)) {
+                            .any(|x| x.0 > self.started_at || timeout(x.1))
+                    {
                         self.promote(tx.clone()).await;
                     }
                 }
